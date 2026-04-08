@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ascensor de Potencias: Lo Micro</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0f1a;
+    --surface: #111827;
+    --surface2: #1e2a3a;
+    --border: #2a3a4a;
+    --green: #34d399;
+    --green-dim: rgba(52,211,153,0.12);
+    --blue: #60a5fa;
+    --red: #f87171;
+    --purple: #a78bfa;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 1.2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-image:
+      radial-gradient(ellipse at 20% 20%, rgba(52,211,153,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 80%, rgba(96,165,250,0.04) 0%, transparent 60%);
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 1.4rem;
+  }
+
+  h1 {
+    font-size: clamp(2rem, 3.5vw, 3.2rem);
+    font-weight: 800;
+    color: var(--green);
+    letter-spacing: -0.02em;
+    margin-bottom: 0.3rem;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-style: italic;
+    font-size: 1.2rem;
+    font-family: var(--mono);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    width: 100%;
+    max-width: 1400px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 1.25rem;
+    padding: 1.75rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  /* ── Ascensor ── */
+  .elevator-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.2rem;
+  }
+
+  .btn {
+    width: 76px; height: 76px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem;
+    transition: background 0.2s, transform 0.1s;
+    background: var(--surface2);
+    color: var(--text);
+  }
+  .btn:hover:not(:disabled) { transform: scale(1.08); }
+  .btn.up:hover:not(:disabled) { background: var(--green); color: #0a0f1a; }
+  .btn.down:hover:not(:disabled) { background: var(--red); color: #0a0f1a; }
+  .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .btn:active:not(:disabled) { transform: scale(0.94); }
+
+  .shaft {
+    width: 200px; height: 260px;
+    background: #060a12;
+    border-radius: 1rem;
+    border: 3px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .shaft::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--green);
+    opacity: 0.25;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse { 0%,100%{opacity:0.1} 50%{opacity:0.5} }
+
+  .shaft-icon {
+    font-size: 4.5rem;
+    margin-bottom: 0.5rem;
+    transition: transform 0.3s;
+    line-height: 1;
+  }
+
+  .shaft-exp {
+    font-family: var(--mono);
+    font-size: 2.4rem;
+    font-weight: 700;
+    color: var(--green);
+    transition: color 0.3s;
+  }
+
+  .shaft-exp sup { font-size: 0.75em; }
+
+  .info-rows { width: 100%; display: flex; flex-direction: column; gap: 0.75rem; }
+
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #060a12;
+    padding: 1rem 1.2rem;
+    border-radius: 0.65rem;
+    border: 1px solid var(--border);
+  }
+
+  .info-label {
+    color: var(--muted);
+    font-size: 0.95rem;
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+  }
+
+  .info-value {
+    font-family: var(--mono);
+    font-size: 1.5rem;
+  }
+  .info-value.green { color: var(--green); }
+  .info-value.blue  { color: var(--blue); }
+
+  /* ── Panel derecho ── */
+  .right-col { display: flex; flex-direction: column; gap: 1.25rem; }
+
+  .explain-card {
+    background: rgba(52,211,153,0.06);
+    border: 1px solid rgba(52,211,153,0.2);
+    border-radius: 1.25rem;
+    padding: 1.6rem;
+  }
+
+  .explain-card h2 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--green);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .explain-card h2 svg { width: 28px; height: 28px; }
+
+  .explain-text {
+    color: #cbd5e1;
+    line-height: 1.75;
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+    font-family: var(--sans);
+  }
+
+  .explain-text strong { color: #fff; }
+
+  .example-box {
+    background: rgba(0,0,0,0.3);
+    border-left: 4px solid var(--green);
+    border-radius: 0 0.5rem 0.5rem 0;
+    padding: 0.9rem 1.2rem;
+    color: var(--muted);
+    font-style: italic;
+    font-size: 1.15rem;
+  }
+
+  /* ── Cable del punto decimal ── */
+  .cable-card { background: var(--surface); border: 1px solid var(--border); border-radius: 1.25rem; padding: 1.6rem; }
+
+  .cable-card h3 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .cable-card h3 svg { color: var(--green); width: 24px; height: 24px; }
+
+  .decimal-display {
+    font-family: var(--mono);
+    font-size: 1.6rem;
+    background: #000;
+    padding: 1.2rem;
+    border-radius: 0.65rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    align-items: center;
+    justify-content: center;
+    min-height: 72px;
+    letter-spacing: 0.05em;
+  }
+
+  .d-sep   { color: var(--green); font-weight: 700; text-decoration: underline; }
+  .d-zero  { color: var(--green); opacity: 0.5; }
+  .d-one   { color: #fff; font-weight: 700; }
+  .d-one.highlighted { color: var(--blue); border-bottom: 3px solid var(--blue); }
+  .d-trail { color: var(--blue); }
+
+  .cable-hint {
+    font-size: 1rem;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 0.75rem;
+    font-style: italic;
+    font-family: var(--mono);
+  }
+
+  footer {
+    margin-top: 2rem;
+    text-align: center;
+    color: var(--muted);
+    font-size: 1rem;
+    font-family: var(--mono);
+    line-height: 1.8;
+    opacity: 0.7;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Ascensor de Potencias: Lo Micro</h1>
+  <p class="subtitle">"Cazadores de Virus — Grado 8°"</p>
+</header>
+
+<div class="grid">
+
+  <!-- Columna izquierda: Ascensor -->
+  <div class="card elevator-col">
+    <button class="btn up" id="btn-up" onclick="changeFloor(1)" title="Subir">
+      ▲
+    </button>
+
+    <div class="shaft">
+      <div class="shaft-icon" id="shaft-icon">🧍</div>
+      <div class="shaft-exp">10<sup id="exp-val">0</sup></div>
+    </div>
+
+    <button class="btn down" id="btn-down" onclick="changeFloor(-1)" title="Bajar">
+      ▼
+    </button>
+
+    <div class="info-rows">
+      <div class="info-row">
+        <span class="info-label">Notación Científica</span>
+        <span class="info-value green">1 × 10<sup id="sci-exp">0</sup> m</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Valor Decimal</span>
+        <span class="info-value blue" id="decimal-val">1 m</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Columna derecha: Info + Cable -->
+  <div class="right-col">
+
+    <div class="explain-card">
+      <h2>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        ¿Qué está pasando?
+      </h2>
+      <p class="explain-text" id="explain-text">
+        Estás en el piso <strong id="floor-name">Metro (Nivel Humano)</strong>. 
+        <span id="explain-body">Estás en el punto de referencia humano.</span>
+      </p>
+      <div class="example-box" id="example-box">Tú estás aquí</div>
+    </div>
+
+    <div class="cable-card">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        El "Cable" del Punto Decimal
+      </h3>
+      <div class="decimal-display" id="decimal-display"></div>
+      <p class="cable-hint">Al bajar (exponentes negativos), los ceros aparecen a la IZQUIERDA del 1.</p>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  <p>Producido para Álgebra Grado 8° • Semana 8</p>
+  <p>Basado en la metodología de Aprendizaje por Indagación</p>
+</footer>
+
+<script>
+const floors = [
+  { level: 3,  label: 'Kilómetro',           icon: '🏙️', desc: 'Ciudades y distancias largas',       val: '1.000 m' },
+  { level: 2,  label: 'Hectómetro',           icon: '🏟️', desc: 'Estadios de fútbol',                val: '100 m' },
+  { level: 1,  label: 'Decámetro',            icon: '🚌', desc: 'Autobuses y casas',                  val: '10 m' },
+  { level: 0,  label: 'Metro (Nivel Humano)', icon: '🧍', desc: 'Tú estás aquí',                      val: '1 m' },
+  { level: -1, label: 'Decímetro',            icon: '🍎', desc: 'Frutas y manos',                     val: '0,1 m' },
+  { level: -2, label: 'Centímetro',           icon: '🪙', desc: 'Monedas e insectos',                 val: '0,01 m' },
+  { level: -3, label: 'Milímetro',            icon: '🐜', desc: 'Hormigas y arena',                   val: '0,001 m' },
+  { level: -4, label: 'Décima de mm',         icon: '📄', desc: 'Grosor de un papel',                 val: '0,0001 m' },
+  { level: -5, label: 'Centésima de mm',      icon: '💇', desc: 'Ancho de un cabello',                val: '0,00001 m' },
+  { level: -6, label: 'Micra (Bacteria)',     icon: '🔬', desc: 'Mundo bacteriano (E. coli)',         val: '0,000001 m' },
+  { level: -7, label: 'Nanómetro (Virus)',    icon: '🦠', desc: 'Virus del resfriado / VIH',          val: '0,0000001 m' },
+  { level: -8, label: 'Cadenas ADN',          icon: '🧬', desc: 'Genética molecular',                 val: '0,00000001 m' },
+  { level: -9, label: 'Átomo',               icon: '⚛️', desc: 'Límite de la materia',               val: '0,000000001 m' },
+];
+
+let floor = 0;
+
+function getFloor(lvl) {
+  return floors.find(f => f.level === lvl);
+}
+
+function updateDecimalDisplay(lvl) {
+  const box = document.getElementById('decimal-display');
+  box.innerHTML = '';
+
+  if (lvl < 0) {
+    const sep = document.createElement('span');
+    sep.className = 'd-sep';
+    sep.textContent = '0,';
+    box.appendChild(sep);
+
+    for (let i = 0; i < Math.abs(lvl) - 1; i++) {
+      const z = document.createElement('span');
+      z.className = 'd-zero';
+      z.textContent = '0';
+      box.appendChild(z);
+    }
+
+    const one = document.createElement('span');
+    one.className = 'd-one';
+    one.textContent = '1';
+    box.appendChild(one);
+
+  } else if (lvl === 0) {
+    const one = document.createElement('span');
+    one.className = 'd-one highlighted';
+    one.textContent = '1';
+    box.appendChild(one);
+
+    const trail = document.createElement('span');
+    trail.style.color = '#334155';
+    trail.textContent = ',0';
+    box.appendChild(trail);
+
+  } else {
+    const one = document.createElement('span');
+    one.className = 'd-one';
+    one.textContent = '1';
+    box.appendChild(one);
+
+    for (let i = 0; i < lvl; i++) {
+      const z = document.createElement('span');
+      z.className = 'd-trail';
+      z.textContent = '0';
+      box.appendChild(z);
+    }
+  }
+}
+
+function render() {
+  const f = getFloor(floor);
+
+  // Shaft
+  document.getElementById('shaft-icon').textContent = f.icon;
+  document.getElementById('exp-val').textContent = floor;
+  document.getElementById('sci-exp').textContent = floor;
+  document.getElementById('decimal-val').textContent = f.val;
+
+  // Explain
+  document.getElementById('floor-name').textContent = f.label;
+  const bodyEl = document.getElementById('explain-body');
+  if (floor < 0) {
+    bodyEl.innerHTML = `Al ser un exponente negativo (${floor}), significa que hemos dividido la unidad original entre 10, <strong>${Math.abs(floor)} veces</strong> consecutivas.`;
+  } else if (floor > 0) {
+    bodyEl.innerHTML = `Al ser un exponente positivo (${floor}), hemos multiplicado la unidad original por 10, <strong>${floor} veces</strong>.`;
+  } else {
+    bodyEl.innerHTML = 'Estás en el punto de referencia humano.';
+  }
+  document.getElementById('example-box').textContent = '"' + f.desc + '"';
+
+  // Buttons
+  document.getElementById('btn-up').disabled   = floor === 3;
+  document.getElementById('btn-down').disabled = floor === -9;
+
+  // Decimal display
+  updateDecimalDisplay(floor);
+}
+
+function changeFloor(delta) {
+  const next = floor + delta;
+  if (next <= 3 && next >= -9) {
+    floor = next;
+
+    // Animación breve del icono
+    const icon = document.getElementById('shaft-icon');
+    icon.style.transform = delta > 0 ? 'translateY(8px)' : 'translateY(-8px)';
+    icon.style.transition = 'transform 0s';
+    setTimeout(() => {
+      icon.style.transition = 'transform 0.3s ease';
+      icon.style.transform = 'translateY(0)';
+    }, 20);
+
+    render();
+  }
+}
+
+// Teclado: flechas arriba/abajo
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowUp')   changeFloor(1);
+  if (e.key === 'ArrowDown') changeFloor(-1);
+});
+
+render();
+</script>
+</body>
+</html>
